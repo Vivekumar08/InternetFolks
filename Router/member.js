@@ -15,14 +15,22 @@ MemberRouter.delete('/:id', auth, async (req, res) => {
         // Check if the member exists
         const member = await memberCollection.findOne({ id: memberId });
         if (!member) {
-            res.status(404).json({ error: 'Member not found' });
+            res.status(400).json({
+                status: false,
+                errors: [
+                    {
+                        message: "Member not found.",
+                        code: "RESOURCE_NOT_FOUND"
+                    }
+                ]
+            });
             return;
         }
 
         // Check if the user has the Community Admin or Community Moderator role
         const role = await communityCollection.findOne({ owner: req.userId });
 
-        if (!role) return res.status(403).json({ error: 'NOT_ALLOWED_ACCESS' });
+        if (!role) return res.status(400).json({ error: 'NOT_ALLOWED_ACCESS' });
 
         // Remove the member from the database
         await memberCollection.deleteOne({ id: memberId });
@@ -37,7 +45,16 @@ MemberRouter.post('/', auth, async (req, res) => {
     try {
         const { communityId, userId, roleId } = req.body;
         if (!communityId || !userId || !roleId) {
-            res.status(400).json({ error: 'Invalid communityId, userId, or roleId' });
+            res.status(400).json({
+                status: false,
+                errors: [
+                    {
+                        param: "communityId, userId, and roleId",
+                        message: "communityId, userId, and roleId must not be null",
+                        code: "INVALID_INPUT"
+                    }
+                ]
+            });
             return;
         }
 
@@ -50,27 +67,73 @@ MemberRouter.post('/', auth, async (req, res) => {
         // Check if the community exists
         const community = await communityCollection.findOne({ id: communityId });
         if (!community) {
-            res.status(404).json({ error: 'Community not found' });
+            res.status(400).json({
+                status: false,
+                errors: [
+                    {
+                        param: "community",
+                        message: "Community not found.",
+                        code: "RESOURCE_NOT_FOUND"
+                    }
+                ]
+            });
             return;
         }
 
         // Check if the user exists
         const user = await userCollection.findOne({ id: userId });
         if (!user) {
-            res.status(404).json({ error: 'User not found' });
+            res.status(400).json({
+                status: false,
+                errors: [
+                    {
+                        param: "user",
+                        message: "User not found.",
+                        code: "RESOURCE_NOT_FOUND"
+                    }
+                ]
+            });
             return;
         }
 
         // Check if the role exists
         const role = await roleCollection.findOne({ id: roleId });
         if (!role) {
-            res.status(404).json({ error: 'Role not found' });
+            res.status(400).json({
+                status: false,
+                errors: [
+                    {
+                        param: "role",
+                        message: "Role not found.",
+                        code: "RESOURCE_NOT_FOUND"
+                    }
+                ]
+            });
             return;
         }
 
+        const memberExist = await memberCollection.findOne({ userId: userId })
+        if (memberExist) return res.status(400).json({
+            status: false,
+            errors: [
+                {
+                    message: "User is already added in the community.",
+                    code: "RESOURCE_EXISTS"
+                }
+            ]
+        })
+
         // Check if the user has the Community Admin role
         if (community.owner !== req.userId) {
-            res.status(403).json({ error: 'NOT_ALLOWED_ACCESS' });
+            res.status(400).json({
+                status: false,
+                errors: [
+                    {
+                        message: "You are not authorized to perform this action.",
+                        code: "NOT_ALLOWED_ACCESS"
+                    }
+                ]
+            });
             return;
         }
 
@@ -86,8 +149,9 @@ MemberRouter.post('/', auth, async (req, res) => {
             created_at: new Date(),
         };
 
+
         // Save the member in the database
-        const result = await memberCollection.insertOne(member);
+        await memberCollection.insertOne(member);
 
         const responseData = {
             status: true,
