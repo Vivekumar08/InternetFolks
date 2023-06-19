@@ -169,7 +169,7 @@ UserRoouter.post('/signin', async (req, res) => {
             return;
         }
 
-        const accessToken = generateAccessToken(user.id.toString());
+        const passwordMatch = await bcrypt.compare(password, user.password);
 
         const responseData = {
             status: true,
