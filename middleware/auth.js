@@ -3,8 +3,8 @@ const jwt = require('jsonwebtoken');
 module.exports = function auth(req, res, next) {
     try {
 
-        // const accessToken = req.cookies.access_token;
-        const accessToken = req.headers.authorization.split(" ")[1];
+        const accessToken = req.cookies.access_token;
+        // const accessToken = req.headers.authorization.split(" ")[1];
         if (!accessToken) {
             res.status(401).json({
                 status: false,
